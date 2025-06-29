@@ -209,6 +209,9 @@ button:active {
 
 .delete-item-btn {
     background-color: var(--delete-button-color);
+    font-size: 1.2em; /* Increase font size for emoji/icon */
+    padding: 4px 8px; /* Adjust padding for icon */
+    line-height: 1; /* Reset line height for better centering */
 }
 .delete-item-btn:hover {
     background-color: var(--delete-button-hover-color);
@@ -303,8 +306,9 @@ button:active {
     color: white;
     border: none;
     border-radius: 5px;
-    padding: 8px 12px;
-    font-size: 0.85em;
+    padding: 4px 8px; /* Adjusted padding for icon */
+    font-size: 1.2em; /* Increased font size for icon */
+    line-height: 1; /* Reset line height */
     cursor: pointer;
     transition: background-color 0.3s ease;
     width: auto; /* Ancho automático para el botón de borrar */

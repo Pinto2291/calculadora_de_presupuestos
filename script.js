@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentItems = []; // Stores items in the current budget (before becoming a partial total)
     let partialTotalsData = []; // Stores objects for all created partial totals
 
+    // --- Number Formatting Utility ---
+    const formatNumber = (num) => {
+        // Formats a number to Venezuelan locale (e.g., 1.500,00)
+        return num.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
     // --- Custom Alert Modal Functions ---
     function showAlert(message) {
         modalMessage.textContent = message;
@@ -67,18 +73,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isNaN(bcvExchangeRate) || bcvExchangeRate <= 0) {
                  throw new Error('La tasa de cambio obtenida no es válida.');
             }
-            bcvRateElement.textContent = bcvExchangeRate.toFixed(2);
+            bcvRateElement.textContent = formatNumber(bcvExchangeRate); // Format rate
         } catch (error) {
             console.error('Error al obtener la tasa de cambio del BCV:', error);
-            // Updated: Display error directly on the rate element, without using showAlert on startup.
-            bcvRateElement.textContent = `Error: ${bcvExchangeRate.toFixed(2)}`; // Show default value if available
-            if (bcvExchangeRate === 0) {
-                bcvRateElement.textContent = 'Error: No disponible'; // If default is also 0
-            }
+            bcvRateElement.textContent = `Error: ${formatNumber(bcvExchangeRate)}`;
+            
             // Set a default if fetching fails or rate is invalid
             if (bcvExchangeRate === 0 || isNaN(bcvExchangeRate) || bcvExchangeRate <= 0) {
                  bcvExchangeRate = 36.00; // Fallback default value
-                 bcvRateElement.textContent = `${bcvExchangeRate.toFixed(2)} (por defecto)`;
+                 bcvRateElement.textContent = `${formatNumber(bcvExchangeRate)} (por defecto)`;
             }
             console.warn('Usando una tasa de cambio predeterminada debido a un error al cargar la API.');
         }
@@ -92,8 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentSubtotalUSD = currentItems.reduce((sum, item) => sum + (item.quantity * item.priceUSD), 0);
         let currentSubtotalVES = currentSubtotalUSD * bcvExchangeRate;
 
-        currentSubtotalUsdElement.textContent = `${currentSubtotalUSD.toFixed(2)} USD`;
-        currentSubtotalVesElement.textContent = `${currentSubtotalVES.toFixed(2)} VES`;
+        currentSubtotalUsdElement.textContent = `${formatNumber(currentSubtotalUSD)} USD`;
+        currentSubtotalVesElement.textContent = `${formatNumber(currentSubtotalVES)} VES`;
 
         // Calculate grand total from all partial totals
         let totalFromPartialsUSD = partialTotalsData.reduce((sum, pt) => sum + pt.totalUSD, 0);
@@ -103,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const grandTotalCalculatedUSD = totalFromPartialsUSD + currentSubtotalUSD;
         const grandTotalCalculatedVES = totalFromPartialsVES + currentSubtotalVES;
 
-        grandTotalUsdElement.textContent = grandTotalCalculatedUSD.toFixed(2);
-        grandTotalVesElement.textContent = grandTotalCalculatedVES.toFixed(2);
+        grandTotalUsdElement.textContent = formatNumber(grandTotalCalculatedUSD);
+        grandTotalVesElement.textContent = formatNumber(grandTotalCalculatedVES);
 
         calculateFinalTotals();
         toggleNoItemsMessage();
@@ -115,8 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
      * @brief Calculates and displays the final totals, including any percentage addition.
      */
     function calculateFinalTotals() {
-        const totalUSD = parseFloat(grandTotalUsdElement.textContent) || 0;
-        const totalVES = parseFloat(grandTotalVesElement.textContent) || 0;
+        const totalUSD = parseFloat(grandTotalUsdElement.textContent.replace(/\./g, '').replace(',', '.')) || 0; // Parse formatted number
+        const totalVES = parseFloat(grandTotalVesElement.textContent.replace(/\./g, '').replace(',', '.')) || 0; // Parse formatted number
 
         const percentage = parseFloat(percentageAddInput.value) || 0;
         const multiplier = 1 + (percentage / 100);
@@ -124,8 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const finalUSD = totalUSD * multiplier;
         const finalVES = totalVES * multiplier;
 
-        finalTotalUsdElement.textContent = finalUSD.toFixed(2);
-        finalTotalVesElement.textContent = finalVES.toFixed(2);
+        finalTotalUsdElement.textContent = formatNumber(finalUSD);
+        finalTotalVesElement.textContent = formatNumber(finalVES);
     }
 
     /**
@@ -190,16 +193,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="item-name">${item.name}</span>
                 <span class="item-details">
                     Cantidad: ${item.quantity} | 
-                    Precio Unitario: ${item.priceUSD.toFixed(2)} USD (${item.priceVES.toFixed(2)} VES)
+                    Precio Unitario: ${formatNumber(item.priceUSD)} USD (${formatNumber(item.priceVES)} VES)
                 </span>
             </div>
             <div class="item-price-converted">
-                <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
-                <span>${item.totalVES.toFixed(2)} VES</span>
+                <span>Total: ${formatNumber(item.totalUSD)} USD</span>
+                <span>${formatNumber(item.totalVES)} VES</span>
             </div>
             <div class="item-actions">
                 <button class="edit-item-btn" data-id="${item.id}">Editar</button>
-                <button class="delete-item-btn" data-id="${item.id}">Eliminar</button>
+                <button class="delete-item-btn" data-id="${item.id}">🗑️</button>
             </div>
         `;
         parentElement.appendChild(itemDiv);
@@ -386,8 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemPriceConverted = itemRowElement.querySelector('.item-price-converted');
             if (itemPriceConverted) { // Ensure the element exists before trying to set innerHTML
                 itemPriceConverted.innerHTML = `
-                    <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
-                    <span>${item.totalVES.toFixed(2)} VES</span>
+                    <span>Total: ${formatNumber(item.totalUSD)} USD</span>
+                    <span>${formatNumber(item.totalVES)} VES</span>
                 `;
             }
         }
@@ -407,16 +410,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="item-name">${item.name}</span>
                 <span class="item-details">
                     Cantidad: ${item.quantity} | 
-                    Precio Unitario: ${item.priceUSD.toFixed(2)} USD (${item.priceVES.toFixed(2)} VES)
+                    Precio Unitario: ${formatNumber(item.priceUSD)} USD (${formatNumber(item.priceVES)} VES)
                 </span>
             </div>
             <div class="item-price-converted">
-                <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
-                <span>${item.totalVES.toFixed(2)} VES</span>
+                <span>Total: ${formatNumber(item.totalUSD)} USD</span>
+                <span>${formatNumber(item.totalVES)} VES</span>
             </div>
             <div class="item-actions">
                 <button class="edit-item-btn" data-id="${item.id}">Editar</button>
-                <button class="delete-item-btn" data-id="${item.id}">Eliminar</button>
+                <button class="delete-item-btn" data-id="${item.id}">🗑️</button>
             </div>
         `;
         itemRowElement.classList.remove('editing'); // Ensure editing class is removed
@@ -466,12 +469,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="partial-total-header">
                 <h3 class="partial-name">${partialTotal.name}</h3>
                 <button class="edit-partial-name-btn" data-id="${partialTotal.id}">Editar Nombre</button>
-                <button class="delete-partial-btn" data-id="${partialTotal.id}">Eliminar</button>
+                <button class="delete-partial-btn" data-id="${partialTotal.id}">🗑️</button>
             </div>
             <div class="partial-total-summary">
                 <span>Total:</span>
-                <span>${partialTotal.totalUSD.toFixed(2)} USD</span>
-                <span>${partialTotal.totalVES.toFixed(2)} VES</span>
+                <span>${formatNumber(partialTotal.totalUSD)} USD</span>
+                <span>${formatNumber(partialTotal.totalVES)} VES</span>
             </div>
             <details>
                 <summary>Ver Ítems (${partialTotal.items.length})</summary>
@@ -509,16 +512,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="item-name">${item.name}</span>
                 <span class="item-details">
                     Cantidad: ${item.quantity} | 
-                    Precio Unitario: ${item.priceUSD.toFixed(2)} USD (${item.priceVES.toFixed(2)} VES)
+                    Precio Unitario: ${formatNumber(item.priceUSD)} USD (${formatNumber(item.priceVES)} VES)
                 </span>
             </div>
             <div class="item-price-converted">
-                <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
-                <span>${item.totalVES.toFixed(2)} VES</span>
+                <span>Total: ${formatNumber(item.totalUSD)} USD</span>
+                <span>${formatNumber(item.totalVES)} VES</span>
             </div>
             <div class="item-actions">
                 <button class="edit-item-btn" data-id="${item.id}" data-partial-total-id="${partialTotalId}">Editar</button>
-                <button class="delete-item-btn" data-id="${item.id}" data-partial-total-id="${partialTotalId}">Eliminar</button>
+                <button class="delete-item-btn" data-id="${item.id}" data-partial-total-id="${partialTotalId}">🗑️</button>
             </div>
         `;
         parentElement.appendChild(itemDiv);
@@ -563,9 +566,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!partialTotal) return;
 
         const partialTotalHeader = partialTotalElement.querySelector('.partial-total-header');
-        const originalNameHtml = partialTotalHeader.innerHTML; // Store original HTML
-
-        partialTotalElement.dataset.originalPartialNameHtml = originalNameHtml;
+        
+        // Store current content to restore on cancel
+        partialTotalElement.dataset.originalPartialNameHtml = partialTotalHeader.innerHTML;
 
         partialTotalHeader.innerHTML = `
             <div class="partial-name-edit-group">
@@ -573,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="save-partial-name-btn" data-id="${partialTotal.id}">Guardar</button>
                 <button class="cancel-partial-name-btn" data-id="${partialTotal.id}">Cancelar</button>
             </div>
-            <button class="delete-partial-btn" data-id="${partialTotal.id}">Eliminar</button>
+            <button class="delete-partial-btn" data-id="${partialTotal.id}">🗑️</button>
         `;
     }
 
@@ -668,8 +671,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showAlert('Por favor, ingrese un precio válido en USD o VES.');
             return;
         }
-        // Removed the strict check for "both entered" here, as auto-population makes it common.
-        // The addItem function will prioritize USD if both are valid.
 
         addItem(name, quantity, hasValidUsdInput ? priceUsd : null, hasValidVesInput ? priceVes : null);
     });
@@ -740,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const partialTotalElement = target.closest('.partial-total-item');
             cancelPartialTotalNameEdit(partialTotalElement);
         }
-        // Handle item actions within partial totals
+        // Handle item actions within partial totals (delegated through partialTotalsList)
         else if (itemRowElement && itemRowElement.dataset.partialTotalId) {
             const itemId = parseInt(itemRowElement.dataset.id);
             const parentPartialTotalId = parseInt(itemRowElement.dataset.partialTotalId);
@@ -752,7 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (target.classList.contains('save-item-btn')) {
                 saveItemEdit(itemId, itemRowElement, parentPartialTotalId);
             } else if (target.classList.contains('cancel-item-btn')) {
-                cancelItemEdit(itemRowElement); // Cancel logic is generic, no need for partialTotalId here
+                cancelItemEdit(itemRowElement);
             }
         }
     });
