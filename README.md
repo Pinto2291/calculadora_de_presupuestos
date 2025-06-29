@@ -14,8 +14,7 @@ Facilitar la conversión de moneda: Conecta con una API para obtener la tasa de 
 
 Podrás añadir ítems con precios en USD o VES, organizar tus gastos en totales parciales, y obtener un total general con la opción de añadir un porcentaje adicional, todo ello de forma clara y adaptada a la realidad económica local.
 
-## 
-Acceder a la Aplicación
+## Acceder a la Aplicación
 
 Puedes acceder a la Calculadora de Presupuesto a través del siguiente enlace:
 
