@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Presupuesto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 
+        Para que la aplicación funcione correctamente, especialmente la función de obtención de la tasa de cambio, 
+        debes ejecutarla desde un servidor web local (incluso uno simple).
+        Si abres el archivo HTML directamente (ej. file:///...), el navegador podría bloquear la solicitud de la API por motivos de seguridad (CORS).
+        Puedes usar "python -m http.server" en el directorio del proyecto para iniciar un servidor simple y luego acceder a http://localhost:8000.
+    -->
+    <div class="container">
+        <h1>Calculadora de Presupuesto</h1>
+
+        <div class="exchange-rate-section">
+            <h2>Tasa de Cambio BCV</h2>
+            <div class="currency-display">
+                <span>1 USD = </span>
+                <span id="bcv-rate" class="rate-value">Cargando...</span>
+                <span> VES</span>
+            </div>
+        </div>
+
+        <div class="item-input-section">
+            <h2>Agregar Nuevo Ítem</h2>
+            <input type="text" id="item-name" placeholder="Nombre del Ítem">
+            <input type="number" id="item-quantity" placeholder="Cantidad" min="1">
+            <div class="currency-inputs">
+                <input type="number" id="item-price-usd" placeholder="Precio en USD" step="0.01" min="0">
+                <input type="number" id="item-price-ves" placeholder="Precio en VES" step="0.01" min="0">
+            </div>
+            <button id="add-item-btn">Agregar Ítem</button>
+        </div>
+
+        <div class="items-list-section">
+            <h2>Detalle del Presupuesto Actual</h2>
+            <div id="items-list">
+                <!-- Los ítems se añadirán aquí dinámicasmente -->
+                <p id="no-items-message" class="info-message">No hay ítems en el presupuesto actual.</p>
+            </div>
+            <div class="subtotal-item">
+                <span>Subtotal Actual:</span>
+                <span id="current-subtotal-usd">0.00 USD</span>
+                <span id="current-subtotal-ves">0.00 VES</span>
+            </div>
+            <div class="partial-total-input-group">
+                <input type="text" id="partial-total-name" placeholder="Nombre del Total Parcial (Opcional)">
+                <button id="create-partial-total-btn">Crear Total Parcial</button>
+            </div>
+        </div>
+
+        <div class="totals-section">
+            <h2>Totales Parciales y General</h2>
+            <div id="partial-totals-list">
+                <!-- Los totales parciales se añadirán aquí dinámicamente -->
+                <p id="no-partial-totals-message" class="info-message">No hay totales parciales creados.</p>
+            </div>
+            <div class="total-summary">
+                <div class="total-line">
+                    <span>Total General (USD):</span>
+                    <span id="grand-total-usd">0.00</span>
+                </div>
+                <div class="total-line">
+                    <span>Total General (VES):</span>
+                    <span id="grand-total-ves">0.00</span>
+                </div>
+                <div class="percentage-input-group">
+                    <label for="percentage-add">Agregar % al Total:</label>
+                    <input type="number" id="percentage-add" placeholder="%" min="0" max="100" value="0">
+                </div>
+                <div class="total-line final-total">
+                    <span>Total Final con % (USD):</span>
+                    <span id="final-total-usd">0.00</span>
+                </div>
+                <div class="total-line final-total">
+                    <span>Total Final con % (VES):</span>
+                    <span id="final-total-ves">0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert/Modal HTML -->
+    <div id="custom-alert-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modal-message"></p>
+            <button class="modal-ok-button">OK</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

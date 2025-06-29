@@ -1,0 +1,557 @@
+/* Variables para colores (Verde y Oscuro) */
+:root {
+    --bg-color: #0c1a11; /* Verde muy oscuro, casi negro */
+    --card-bg-color: #1a2f22; /* Tono de verde oscuro */
+    --text-color: #e0f2f1; /* Blanco verdoso claro */
+    --primary-color: #2e4a3d; /* Verde oscuro medio */
+    --secondary-color: #66bb6a; /* Verde brillante (accent) */
+    --tertiary-color: #81c784; /* Verde más claro para detalles */
+    --border-color: #4db6ac; /* Verde azulado para bordes */
+    --button-bg-color: #43a047; /* Verde medio para botones */
+    --button-hover-bg-color: #388e3c; /* Verde más oscuro al pasar el ratón */
+    --input-bg-color: #11221a; /* Verde oscuro para inputs */
+    --input-border-color: #5cb85c; /* Verde para bordes de input */
+    --delete-button-color: #e57373; /* Rojo suave para borrar */
+    --delete-button-hover-color: #ef5350; /* Rojo más intenso */
+    --edit-button-color: #ffb74d; /* Naranja para editar */
+    --edit-button-hover-color: #ffa726; /* Naranja más intenso */
+    --save-button-color: #2196f3; /* Azul para guardar */
+    --save-button-hover-color: #1976d2; /* Azul más intenso */
+}
+
+/* Tipografía moderna */
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    box-sizing: border-box;
+    line-height: 1.6;
+}
+
+.container {
+    background-color: var(--card-bg-color);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 850px;
+    box-sizing: border-box;
+}
+
+h1, h2 {
+    color: var(--secondary-color);
+    text-align: center;
+    margin-bottom: 25px;
+    font-weight: 600; /* Semi-bold */
+}
+
+/* Estilos de secciones */
+.exchange-rate-section,
+.item-input-section,
+.items-list-section,
+.totals-section {
+    background-color: var(--primary-color);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+}
+
+.info-message {
+    text-align: center;
+    color: var(--tertiary-color);
+    font-style: italic;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.currency-display {
+    text-align: center;
+    font-size: 1.7em;
+    font-weight: 700; /* Bold */
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--input-bg-color);
+    margin-bottom: 20px;
+}
+
+.rate-value {
+    color: var(--secondary-color);
+}
+
+/* Inputs y botones */
+input[type="text"],
+input[type="number"] {
+    width: calc(100% - 24px); /* Ajusta por padding */
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 2px solid var(--input-border-color);
+    border-radius: 6px;
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    box-sizing: border-box;
+    font-size: 1em;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus {
+    border-color: var(--secondary-color);
+    outline: none;
+    box-shadow: 0 0 8px rgba(102, 187, 106, 0.5); /* Sombra de enfoque verdosa */
+}
+
+input::placeholder {
+    color: #a7a7a7;
+    opacity: 0.7;
+}
+
+button {
+    width: 100%;
+    padding: 14px 20px;
+    background-color: var(--button-bg-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:hover {
+    background-color: var(--button-hover-bg-color);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Currency Inputs Group */
+.currency-inputs {
+    display: flex;
+    gap: 15px; /* Espacio entre los dos inputs de moneda */
+    margin-bottom: 15px;
+}
+
+.currency-inputs input {
+    flex: 1; /* Ambos inputs ocuparán el mismo espacio */
+    margin-bottom: 0; /* Elimina el margin-bottom predeterminado */
+}
+
+/* Lista de ítems */
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(129, 199, 132, 0.2); /* Borde punteado suave */
+    position: relative; /* Para posicionar los botones de acción */
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.item-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.item-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.item-details {
+    font-size: 0.85em;
+    color: var(--tertiary-color);
+}
+
+.item-price-converted {
+    text-align: right;
+    font-weight: 600;
+    color: var(--secondary-color);
+    min-width: 150px;
+}
+
+/* Item Action Buttons */
+.item-actions {
+    display: flex;
+    gap: 8px; /* Espacio entre los botones de acción */
+    margin-left: 15px;
+}
+
+.item-actions button {
+    width: auto; /* Ancho automático para los botones de acción */
+    padding: 6px 10px;
+    font-size: 0.8em;
+    font-weight: 500;
+    border-radius: 4px;
+    box-shadow: none;
+    transition: background-color 0.3s ease;
+}
+
+.delete-item-btn {
+    background-color: var(--delete-button-color);
+}
+.delete-item-btn:hover {
+    background-color: var(--delete-button-hover-color);
+}
+
+.edit-item-btn {
+    background-color: var(--edit-button-color);
+}
+.edit-item-btn:hover {
+    background-color: var(--edit-button-hover-color);
+}
+
+.save-item-btn {
+    background-color: var(--save-button-color);
+}
+.save-item-btn:hover {
+    background-color: var(--save-button-hover-color);
+}
+.cancel-item-btn {
+    background-color: #616161; /* Gris */
+}
+.cancel-item-btn:hover {
+    background-color: #424242; /* Gris más oscuro */
+}
+
+
+/* Subtotal e ítems de totales */
+.subtotal-item, .partial-total-summary {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+    padding: 12px 0;
+    margin-top: 20px;
+    border-top: 2px solid var(--border-color);
+    color: var(--secondary-color);
+    align-items: center; /* Alinea verticalmente el contenido */
+}
+
+.partial-total-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.partial-total-item {
+    background-color: var(--input-bg-color); /* Fondo ligeramente diferente para parciales */
+    border-radius: 8px;
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.partial-total-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.partial-total-header h3 {
+    margin: 0;
+    color: var(--tertiary-color);
+    font-weight: 600;
+    font-size: 1.15em;
+}
+
+.delete-partial-btn {
+    background-color: var(--delete-button-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: auto; /* Ancho automático para el botón de borrar */
+    box-shadow: none; /* Sin sombra adicional */
+}
+
+.delete-partial-btn:hover {
+    background-color: var(--delete-button-hover-color);
+    transform: none; /* No animar en hover */
+    box-shadow: none;
+}
+
+/* Detalles (expandable) para ítems de totales parciales */
+details {
+    margin-top: 10px;
+    border-top: 1px dashed rgba(129, 199, 132, 0.2);
+    padding-top: 10px;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: 400;
+    color: var(--tertiary-color);
+    list-style: none; /* Eliminar el triángulo predeterminado */
+    padding: 5px 0;
+    position: relative;
+    padding-left: 20px; /* Espacio para el ícono personalizado */
+}
+
+summary::before {
+    content: '▶'; /* Ícono de triángulo hacia la derecha */
+    position: absolute;
+    left: 0;
+    transition: transform 0.2s ease;
+}
+
+details[open] summary::before {
+    transform: rotate(90deg); /* Gira el triángulo cuando está abierto */
+}
+
+.partial-item-list .item-row {
+    padding-left: 15px; /* Indentación para los ítems dentro del detalle */
+    font-size: 0.9em;
+}
+
+
+.total-summary {
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+    margin-top: 25px;
+}
+
+.total-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 1.1em;
+    font-weight: 400; /* Regular */
+    color: var(--text-color);
+}
+
+.final-total {
+    font-size: 1.3em;
+    font-weight: 700; /* Bold */
+    color: var(--secondary-color);
+    border-top: 2px solid var(--secondary-color);
+    padding-top: 18px;
+    margin-top: 15px;
+}
+
+.percentage-input-group {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    gap: 10px; /* Espacio entre label e input */
+}
+
+.percentage-input-group label {
+    margin-right: 0; /* Ya no es necesario con gap */
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+.percentage-input-group input {
+    flex-grow: 1;
+    width: auto;
+    margin-bottom: 0;
+    text-align: right; /* Alinea el texto a la derecha en el input */
+}
+
+/* Custom Alert Modal */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg-color);
+    margin: auto;
+    padding: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+    text-align: center;
+}
+
+.close-button {
+    color: var(--tertiary-color);
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: var(--secondary-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#modal-message {
+    margin-bottom: 25px;
+    font-size: 1.1em;
+    color: var(--text-color);
+}
+
+.modal-ok-button {
+    padding: 10px 25px;
+    background-color: var(--button-bg-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+
+.modal-ok-button:hover {
+    background-color: var(--button-hover-bg-color);
+}
+
+
+/* Media Queries para Responsive Design */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    h1 {
+        font-size: 1.6em;
+    }
+
+    h2 {
+        font-size: 1.3em;
+    }
+
+    .currency-display {
+        font-size: 1.3em;
+        padding: 12px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    button {
+        padding: 10px;
+        font-size: 0.9em;
+    }
+
+    .currency-inputs {
+        flex-direction: column; /* Apila los inputs de moneda en móviles */
+        gap: 10px;
+    }
+
+    .item-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .item-info {
+        margin-bottom: 5px;
+        width: 100%; /* Ocupa todo el ancho */
+    }
+
+    .item-price-converted {
+        width: 100%;
+        text-align: left;
+        margin-top: 5px;
+        min-width: unset;
+    }
+
+    .item-actions {
+        width: 100%; /* Ocupa todo el ancho en móviles */
+        justify-content: flex-start; /* Alinea los botones a la izquierda */
+        margin-top: 10px;
+        margin-left: 0;
+    }
+
+    .item-actions button {
+        padding: 8px 12px;
+        font-size: 0.75em;
+    }
+
+    .subtotal-item, .total-line {
+        font-size: 1em;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 8px 0;
+    }
+
+    .subtotal-item span, .total-line span {
+        width: 100%;
+        text-align: left;
+        margin-bottom: 5px;
+    }
+    .subtotal-item span:first-child,
+    .total-line span:first-child {
+        font-weight: 400; /* Menos negrita para la etiqueta */
+    }
+
+    .partial-total-input-group {
+        gap: 10px;
+    }
+
+    .percentage-input-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .percentage-input-group label {
+        margin-bottom: 5px;
+    }
+
+    .partial-total-item {
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .partial-total-header h3 {
+        font-size: 1em;
+    }
+
+    .delete-partial-btn {
+        padding: 6px 10px;
+        font-size: 0.75em;
+    }
+
+    .modal-content {
+        padding: 20px;
+    }
+}
