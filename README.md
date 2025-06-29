@@ -31,4 +31,4 @@ Totales Parciales Personalizados: Crea y nombra totales parciales para organizar
 
 Total General y Porcentaje Adicional: Sigue el total acumulado de todos tus gastos y aplica un porcentaje opcional a este gran total para escenarios específicos.
 
-Diseño Responsive: Disfruta de una experiencia de usuario fluida y adaptable tanto en tu computadora como en tu teléfono inteligente, con un tema visual moderno en tonos verde oscuro.
+Diseño Responsive: Disfruta de una experiencia de usuario fluida y adaptable tanto en tu computadora como en tu teléfono inteligente, con un tema visual moderno en tonos verde oscuro

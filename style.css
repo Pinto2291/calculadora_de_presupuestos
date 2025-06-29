@@ -17,6 +17,8 @@
     --edit-button-hover-color: #ffa726; /* Naranja más intenso */
     --save-button-color: #2196f3; /* Azul para guardar */
     --save-button-hover-color: #1976d2; /* Azul más intenso */
+    --cancel-button-color: #616161; /* Gris */
+    --cancel-button-hover-color: #424242; /* Gris más oscuro */
 }
 
 /* Tipografía moderna */
@@ -226,10 +228,10 @@ button:active {
     background-color: var(--save-button-hover-color);
 }
 .cancel-item-btn {
-    background-color: #616161; /* Gris */
+    background-color: var(--cancel-button-color); /* Gris */
 }
 .cancel-item-btn:hover {
-    background-color: #424242; /* Gris más oscuro */
+    background-color: var(--cancel-button-hover-color); /* Gris más oscuro */
 }
 
 
@@ -273,7 +275,28 @@ button:active {
     color: var(--tertiary-color);
     font-weight: 600;
     font-size: 1.15em;
+    flex-grow: 1; /* Permite que el título ocupe espacio */
 }
+
+.partial-total-header .partial-name-edit-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+}
+.partial-total-header .partial-name-edit-group input {
+    margin-bottom: 0;
+    width: auto;
+    flex-grow: 1;
+}
+
+.partial-total-header .partial-name-edit-group button {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.8em;
+    box-shadow: none;
+}
+
 
 .delete-partial-btn {
     background-color: var(--delete-button-color);
@@ -293,6 +316,19 @@ button:active {
     transform: none; /* No animar en hover */
     box-shadow: none;
 }
+
+.edit-partial-name-btn {
+    background-color: var(--edit-button-color);
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.8em;
+    box-shadow: none;
+}
+.edit-partial-name-btn:hover {
+    background-color: var(--edit-button-hover-color);
+    transform: translateY(-1px);
+}
+
 
 /* Detalles (expandable) para ítems de totales parciales */
 details {
@@ -545,10 +581,23 @@ details[open] summary::before {
     .partial-total-header h3 {
         font-size: 1em;
     }
+    .partial-total-header .partial-name-edit-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        width: 100%; /* Ocupa todo el ancho */
+    }
+    .partial-total-header .partial-name-edit-group input {
+        width: calc(100% - 24px); /* Ajusta para padding */
+    }
 
     .delete-partial-btn {
         padding: 6px 10px;
         font-size: 0.75em;
+    }
+    .edit-partial-name-btn {
+        font-size: 0.75em;
+        padding: 6px 10px;
     }
 
     .modal-content {

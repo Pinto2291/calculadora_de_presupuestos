@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const bcvRateElement = document.getElementById('bcv-rate');
     const itemNameInput = document.getElementById('item-name');
     const itemQuantityInput = document.getElementById('item-quantity');
-    const itemPriceUsdInput = document.getElementById('item-price-usd'); // Nuevo input USD
-    const itemPriceVesInput = document.getElementById('item-price-ves'); // Nuevo input VES
+    const itemPriceUsdInput = document.getElementById('item-price-usd');
+    const itemPriceVesInput = document.getElementById('item-price-ves');
     const addItemBtn = document.getElementById('add-item-btn');
     const itemsList = document.getElementById('items-list');
     const noItemsMessage = document.getElementById('no-items-message');
@@ -28,17 +28,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Variables de estado ---
     let bcvExchangeRate = 0;
-    let currentItems = []; // Almacena los ítems del presupuesto actual
-    let partialTotalsData = []; // Almacena los objetos de totales parciales
+    let currentItems = []; // Stores items in the current budget (before becoming a partial total)
+    let partialTotalsData = []; // Stores objects for all created partial totals
 
-    // --- Funciones del Modal Personalizado ---
+    // --- Custom Alert Modal Functions ---
     function showAlert(message) {
         modalMessage.textContent = message;
-        customAlertModal.style.display = 'flex'; // Muestra el modal
+        customAlertModal.style.display = 'flex'; // Show modal
     }
 
     function hideAlert() {
-        customAlertModal.style.display = 'none'; // Oculta el modal
+        customAlertModal.style.display = 'none'; // Hide modal
     }
 
     modalCloseButton.addEventListener('click', hideAlert);
@@ -49,10 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Funciones principales ---
+    // --- Core Application Functions ---
 
     /**
      * @brief Fetches the current exchange rate from a third-party API.
+     * Displays an error message on the UI if fetching fails, but does not use a modal.
      * @returns {Promise<void>} A promise that resolves when the rate is fetched or an error occurs.
      */
     async function fetchBcvRate() {
@@ -69,16 +70,22 @@ document.addEventListener('DOMContentLoaded', () => {
             bcvRateElement.textContent = bcvExchangeRate.toFixed(2);
         } catch (error) {
             console.error('Error al obtener la tasa de cambio del BCV:', error);
-            showAlert(`No se pudo obtener la tasa de cambio del BCV. Error: ${error.message || 'Desconocido'}. 
-                       Por favor, asegúrate de estar ejecutando la aplicación desde un servidor web local y 
-                       verifica tu consola del navegador para más detalles.`);
-            bcvExchangeRate = 36.00; // Default value in case of error
-            bcvRateElement.textContent = bcvExchangeRate.toFixed(2);
+            // Updated: Display error directly on the rate element, without using showAlert on startup.
+            bcvRateElement.textContent = `Error: ${bcvExchangeRate.toFixed(2)}`; // Show default value if available
+            if (bcvExchangeRate === 0) {
+                bcvRateElement.textContent = 'Error: No disponible'; // If default is also 0
+            }
+            // Set a default if fetching fails or rate is invalid
+            if (bcvExchangeRate === 0 || isNaN(bcvExchangeRate) || bcvExchangeRate <= 0) {
+                 bcvExchangeRate = 36.00; // Fallback default value
+                 bcvRateElement.textContent = `${bcvExchangeRate.toFixed(2)} (por defecto)`;
+            }
+            console.warn('Usando una tasa de cambio predeterminada debido a un error al cargar la API.');
         }
     }
 
     /**
-     * @brief Updates the display of the current subtotal and recalculates all final totals.
+     * @brief Recalculates and updates the display of current subtotal, grand totals, and final totals.
      */
     function updateTotals() {
         // Calculate subtotal for current (non-partial) items
@@ -93,8 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalFromPartialsVES = partialTotalsData.reduce((sum, pt) => sum + pt.totalVES, 0);
 
         // Grand total includes items not yet converted to a partial total
-        grandTotalUsdElement.textContent = (totalFromPartialsUSD + currentSubtotalUSD).toFixed(2);
-        grandTotalVesElement.textContent = (totalFromPartialsVES + currentSubtotalVES).toFixed(2);
+        const grandTotalCalculatedUSD = totalFromPartialsUSD + currentSubtotalUSD;
+        const grandTotalCalculatedVES = totalFromPartialsVES + currentSubtotalVES;
+
+        grandTotalUsdElement.textContent = grandTotalCalculatedUSD.toFixed(2);
+        grandTotalVesElement.textContent = grandTotalCalculatedVES.toFixed(2);
 
         calculateFinalTotals();
         toggleNoItemsMessage();
@@ -134,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
             priceVES = priceUSD * (bcvExchangeRate || 0);
         } else if (priceInputVES !== null && !isNaN(priceInputVES) && priceInputVES >= 0) {
             priceVES = priceInputVES;
-            // Avoid division by zero if bcvExchangeRate is 0 or not available
             priceUSD = (bcvExchangeRate > 0) ? (priceVES / bcvExchangeRate) : 0; 
         } else {
             showAlert('Por favor, ingrese un precio válido en USD o VES.');
@@ -158,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderItem(newItem, itemsList);
         updateTotals();
 
-        // Limpiar inputs
+        // Clear inputs
         itemNameInput.value = '';
         itemQuantityInput.value = '';
         itemPriceUsdInput.value = '';
@@ -197,29 +206,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * @brief Deletes an item from the current budget.
-     * @param {number} id - The unique ID of the item to delete.
+     * @brief Deletes an item from either currentItems or a partial total's items.
+     * @param {number} itemId - The unique ID of the item to delete.
+     * @param {number|null} [partialTotalId=null] - The ID of the parent partial total, if applicable.
      */
-    function deleteItem(id) {
-        const initialLength = currentItems.length;
-        currentItems = currentItems.filter(item => item.id !== id);
-
-        if (currentItems.length < initialLength) { // Check if item was actually removed
-            const itemElement = document.querySelector(`#items-list .item-row[data-id="${id}"]`);
-            if (itemElement) {
-                itemElement.remove();
+    function deleteItem(itemId, partialTotalId = null) {
+        if (partialTotalId === null) {
+            // Deleting from currentItems
+            const initialLength = currentItems.length;
+            currentItems = currentItems.filter(item => item.id !== itemId);
+            if (currentItems.length < initialLength) {
+                const itemElement = document.querySelector(`#items-list .item-row[data-id="${itemId}"]`);
+                if (itemElement) {
+                    itemElement.remove();
+                }
+                updateTotals();
             }
-            updateTotals();
+        } else {
+            // Deleting from a partial total's items
+            const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+            if (partialTotal) {
+                const initialLength = partialTotal.items.length;
+                partialTotal.items = partialTotal.items.filter(item => item.id !== itemId);
+                
+                // Recalculate partial total's sum
+                partialTotal.totalUSD = partialTotal.items.reduce((sum, item) => sum + item.totalUSD, 0);
+                partialTotal.totalVES = partialTotal.totalUSD * bcvExchangeRate;
+
+                if (partialTotal.items.length < initialLength) {
+                    // Re-render the specific partial total to reflect the change
+                    renderUpdatedPartialTotal(partialTotal);
+                    updateTotals();
+                }
+            }
         }
     }
 
     /**
-     * @brief Enables editing mode for a specific item in the current budget.
-     * @param {number} id - The ID of the item to edit.
+     * @brief Enables editing mode for a specific item.
+     * @param {number} itemId - The ID of the item to edit.
      * @param {HTMLElement} itemRowElement - The DOM element for the item row.
+     * @param {number|null} [partialTotalId=null] - The ID of the parent partial total, if applicable.
      */
-    function enableItemEdit(id, itemRowElement) {
-        const item = currentItems.find(i => i.id === id);
+    function enableItemEdit(itemId, itemRowElement, partialTotalId = null) {
+        let item;
+        if (partialTotalId === null) {
+            item = currentItems.find(i => i.id === itemId);
+        } else {
+            const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+            item = partialTotal ? partialTotal.items.find(i => i.id === itemId) : null;
+        }
+
         if (!item) return;
 
         const itemInfo = itemRowElement.querySelector('.item-info');
@@ -242,8 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
         itemPriceConverted.innerHTML = ''; // Clear total display during edit
 
         itemActions.innerHTML = `
-            <button class="save-item-btn" data-id="${item.id}">Guardar</button>
-            <button class="cancel-item-btn" data-id="${item.id}">Cancelar</button>
+            <button class="save-item-btn" data-id="${itemId}" data-partial-total-id="${partialTotalId}">Guardar</button>
+            <button class="cancel-item-btn" data-id="${itemId}" data-partial-total-id="${partialTotalId}">Cancelar</button>
         `;
 
         // Add a class to indicate editing mode
@@ -252,33 +289,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * @brief Saves the edited values for an item.
-     * @param {number} id - The ID of the item being edited.
+     * @param {number} itemId - The ID of the item being edited.
      * @param {HTMLElement} itemRowElement - The DOM element for the item row.
+     * @param {number|null} [partialTotalId=null] - The ID of the parent partial total, if applicable.
      */
-    function saveItemEdit(id, itemRowElement) {
-        const item = currentItems.find(i => i.id === id);
+    function saveItemEdit(itemId, itemRowElement, partialTotalId = null) {
+        let item;
+        if (partialTotalId === null) {
+            item = currentItems.find(i => i.id === itemId);
+        } else {
+            const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+            item = partialTotal ? partialTotal.items.find(i => i.id === itemId) : null;
+        }
         if (!item) return;
 
         const newName = itemRowElement.querySelector('.edit-item-name').value.trim();
         const newQuantity = parseInt(itemRowElement.querySelector('.edit-item-quantity').value);
-        const newPriceUsdInput = parseFloat(itemRowElement.querySelector('.edit-item-price-usd').value);
-        const newPriceVesInput = parseFloat(itemRowElement.querySelector('.edit-item-price-ves').value);
+        
+        const rawNewPriceUsd = itemRowElement.querySelector('.edit-item-price-usd').value.trim();
+        const rawNewPriceVes = itemRowElement.querySelector('.edit-item-price-ves').value.trim();
+        const newPriceUsdInput = parseFloat(rawNewPriceUsd);
+        const newPriceVesInput = parseFloat(rawNewPriceVes);
 
         if (!newName || isNaN(newQuantity) || newQuantity <= 0) {
             showAlert('Por favor, ingrese un nombre y cantidad válidos.');
             return;
         }
 
+        const hasValidUsdInput = rawNewPriceUsd !== '' && !isNaN(newPriceUsdInput) && newPriceUsdInput >= 0;
+        const hasValidVesInput = rawNewPriceVes !== '' && !isNaN(newPriceVesInput) && newPriceVesInput >= 0;
+
         let newPriceUSD, newPriceVES;
 
-        // Determine which currency input was primarily used or updated
-        const isUsdEntered = itemRowElement.querySelector('.edit-item-price-usd').value.trim() !== '';
-        const isVesEntered = itemRowElement.querySelector('.edit-item-price-ves').value.trim() !== '';
-
-        if (isUsdEntered && !isNaN(newPriceUsdInput) && newPriceUsdInput >= 0) {
+        if (hasValidUsdInput) {
             newPriceUSD = newPriceUsdInput;
             newPriceVES = newPriceUSD * (bcvExchangeRate || 0);
-        } else if (isVesEntered && !isNaN(newPriceVesInput) && newPriceVesInput >= 0) {
+        } else if (hasValidVesInput) {
             newPriceVES = newPriceVesInput;
             newPriceUSD = (bcvExchangeRate > 0) ? (newPriceVES / bcvExchangeRate) : 0;
         } else {
@@ -294,8 +340,18 @@ document.addEventListener('DOMContentLoaded', () => {
         item.totalUSD = newQuantity * newPriceUSD;
         item.totalVES = newQuantity * newPriceVES;
 
-        // Re-render the specific item row to show updated values and switch back to view mode
-        renderUpdatedItem(item, itemRowElement);
+        if (partialTotalId === null) {
+            // Re-render the specific item row to show updated values and switch back to view mode
+            renderUpdatedItem(item, itemRowElement);
+        } else {
+            // Recalculate parent partial total's sum and re-render the partial total
+            const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+            if (partialTotal) {
+                partialTotal.totalUSD = partialTotal.items.reduce((sum, i) => sum + i.totalUSD, 0);
+                partialTotal.totalVES = partialTotal.totalUSD * bcvExchangeRate;
+                renderUpdatedPartialTotal(partialTotal); // Re-render the entire partial total
+            }
+        }
         updateTotals();
     }
 
@@ -315,15 +371,25 @@ document.addEventListener('DOMContentLoaded', () => {
             itemActions.innerHTML = itemRowElement.dataset.originalActions;
         }
 
-        // Re-add event listeners to the restored buttons (delegation handles this automatically)
         // Re-render the price converted part as it was cleared during edit mode
-        const item = currentItems.find(i => i.id === parseInt(itemRowElement.dataset.id));
+        const itemId = parseInt(itemRowElement.dataset.id);
+        const partialTotalId = itemRowElement.dataset.partialTotalId ? parseInt(itemRowElement.dataset.partialTotalId) : null;
+        let item;
+        if (partialTotalId === null) {
+            item = currentItems.find(i => i.id === itemId);
+        } else {
+            const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+            item = partialTotal ? partialTotal.items.find(i => i.id === itemId) : null;
+        }
+
         if (item) {
             const itemPriceConverted = itemRowElement.querySelector('.item-price-converted');
-            itemPriceConverted.innerHTML = `
-                <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
-                <span>${item.totalVES.toFixed(2)} VES</span>
-            `;
+            if (itemPriceConverted) { // Ensure the element exists before trying to set innerHTML
+                itemPriceConverted.innerHTML = `
+                    <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
+                    <span>${item.totalVES.toFixed(2)} VES</span>
+                `;
+            }
         }
 
         itemRowElement.classList.remove('editing'); // Remove editing class
@@ -331,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * @brief Renders an item's details after an edit, replacing the old DOM element content.
+     * This is specifically for items in the current budget list.
      * @param {Object} item - The updated item object.
      * @param {HTMLElement} itemRowElement - The existing DOM element to update.
      */
@@ -370,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const partialSumVES = currentItems.reduce((sum, item) => sum + item.totalVES, 0);
 
         const newPartialTotal = {
-            id: Date.now(), // Unique ID for deletion
+            id: Date.now(), // Unique ID for deletion and editing
             name: partialName,
             totalUSD: partialSumUSD,
             totalVES: partialSumVES,
@@ -393,11 +460,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPartialTotal(partialTotal) {
         const partialTotalDiv = document.createElement('div');
         partialTotalDiv.classList.add('partial-total-item');
-        partialTotalDiv.dataset.id = partialTotal.id; // Store ID for deletion
+        partialTotalDiv.dataset.id = partialTotal.id; // Store ID for deletion/editing
 
         partialTotalDiv.innerHTML = `
             <div class="partial-total-header">
-                <h3>${partialTotal.name}</h3>
+                <h3 class="partial-name">${partialTotal.name}</h3>
+                <button class="edit-partial-name-btn" data-id="${partialTotal.id}">Editar Nombre</button>
                 <button class="delete-partial-btn" data-id="${partialTotal.id}">Eliminar</button>
             </div>
             <div class="partial-total-summary">
@@ -415,10 +483,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const partialItemListDiv = partialTotalDiv.querySelector('.partial-item-list');
         partialTotal.items.forEach(item => {
-            renderItem(item, partialItemListDiv); // Render items inside the details section
+            // When rendering items inside a partial total, we need to pass the partialTotalId
+            // so the delete/edit functions know which parent total to update.
+            renderItemForPartialTotal(item, partialItemListDiv, partialTotal.id); 
         });
 
         partialTotalsList.appendChild(partialTotalDiv);
+    }
+
+    /**
+     * @brief Renders an item row specifically for use within a partial total's item list.
+     * These items will have data attributes linking them to their parent partial total.
+     * @param {Object} item - The item object to render.
+     * @param {HTMLElement} parentElement - The DOM element where the item row should be appended.
+     * @param {number} partialTotalId - The ID of the parent partial total.
+     */
+    function renderItemForPartialTotal(item, parentElement, partialTotalId) {
+        const itemDiv = document.createElement('div');
+        itemDiv.classList.add('item-row');
+        itemDiv.dataset.id = item.id;
+        itemDiv.dataset.partialTotalId = partialTotalId; // Crucial for delegation
+
+        itemDiv.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">${item.name}</span>
+                <span class="item-details">
+                    Cantidad: ${item.quantity} | 
+                    Precio Unitario: ${item.priceUSD.toFixed(2)} USD (${item.priceVES.toFixed(2)} VES)
+                </span>
+            </div>
+            <div class="item-price-converted">
+                <span>Total: ${item.totalUSD.toFixed(2)} USD</span>
+                <span>${item.totalVES.toFixed(2)} VES</span>
+            </div>
+            <div class="item-actions">
+                <button class="edit-item-btn" data-id="${item.id}" data-partial-total-id="${partialTotalId}">Editar</button>
+                <button class="delete-item-btn" data-id="${item.id}" data-partial-total-id="${partialTotalId}">Eliminar</button>
+            </div>
+        `;
+        parentElement.appendChild(itemDiv);
+    }
+
+    /**
+     * @brief Removes an old partial total DOM element and renders the updated one.
+     * @param {Object} updatedPartialTotal - The partial total object with updated data.
+     */
+    function renderUpdatedPartialTotal(updatedPartialTotal) {
+        const oldElement = document.querySelector(`.partial-total-item[data-id="${updatedPartialTotal.id}"]`);
+        if (oldElement) {
+            oldElement.remove(); // Remove the old DOM element
+        }
+        renderPartialTotal(updatedPartialTotal); // Render the new one
     }
 
     /**
@@ -437,6 +552,65 @@ document.addEventListener('DOMContentLoaded', () => {
             updateTotals(); // Recalculate totals after deletion
         }
     }
+
+    /**
+     * @brief Enables editing mode for a partial total's name.
+     * @param {number} partialTotalId - The ID of the partial total whose name is to be edited.
+     * @param {HTMLElement} partialTotalElement - The DOM element of the partial total.
+     */
+    function enablePartialTotalNameEdit(partialTotalId, partialTotalElement) {
+        const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+        if (!partialTotal) return;
+
+        const partialTotalHeader = partialTotalElement.querySelector('.partial-total-header');
+        const originalNameHtml = partialTotalHeader.innerHTML; // Store original HTML
+
+        partialTotalElement.dataset.originalPartialNameHtml = originalNameHtml;
+
+        partialTotalHeader.innerHTML = `
+            <div class="partial-name-edit-group">
+                <input type="text" class="edit-partial-name-input" value="${partialTotal.name}">
+                <button class="save-partial-name-btn" data-id="${partialTotal.id}">Guardar</button>
+                <button class="cancel-partial-name-btn" data-id="${partialTotal.id}">Cancelar</button>
+            </div>
+            <button class="delete-partial-btn" data-id="${partialTotal.id}">Eliminar</button>
+        `;
+    }
+
+    /**
+     * @brief Saves the new name for a partial total.
+     * @param {number} partialTotalId - The ID of the partial total.
+     * @param {HTMLElement} partialTotalElement - The DOM element of the partial total.
+     */
+    function savePartialTotalName(partialTotalId, partialTotalElement) {
+        const partialTotal = partialTotalsData.find(pt => pt.id === partialTotalId);
+        if (!partialTotal) return;
+
+        const newNameInput = partialTotalElement.querySelector('.edit-partial-name-input');
+        const newName = newNameInput.value.trim();
+
+        if (newName === '') {
+            showAlert('El nombre del total parcial no puede estar vacío.');
+            return;
+        }
+
+        partialTotal.name = newName;
+        renderUpdatedPartialTotal(partialTotal); // Re-render to update the display
+        updateTotals();
+    }
+
+    /**
+     * @brief Cancels editing the name for a partial total and restores its original state.
+     * @param {HTMLElement} partialTotalElement - The DOM element of the partial total.
+     */
+    function cancelPartialTotalNameEdit(partialTotalElement) {
+        const originalNameHtml = partialTotalElement.dataset.originalPartialNameHtml;
+        const partialTotalHeader = partialTotalElement.querySelector('.partial-total-header');
+        if (originalNameHtml && partialTotalHeader) {
+            partialTotalHeader.innerHTML = originalNameHtml;
+        }
+    }
+
 
     /**
      * @brief Toggles the "no items" message visibility.
@@ -462,28 +636,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 partialTotalsList.appendChild(noPartialTotalsMessage);
             }
         } else {
+            // Remove if it exists and there are partial totals
             if (partialTotalsList.contains(noPartialTotalsMessage)) {
                 partialTotalsList.removeChild(noPartialTotalsMessage);
-            }
-            // Ensure noPartialTotalsMessage is not duplicated if already added by some other path.
-            if (partialTotalsList.querySelectorAll('.partial-total-item').length === 0 && !partialTotalsList.contains(noPartialTotalsMessage)) {
-                 partialTotalsList.appendChild(noPartialTotalsMessage);
             }
         }
     }
 
-    // --- Listeners de Eventos ---
+    // --- Event Listeners ---
 
-    // Listener para agregar un ítem
+    // Listener for adding a new item
     addItemBtn.addEventListener('click', () => {
         const name = itemNameInput.value.trim();
         const quantity = parseInt(itemQuantityInput.value);
         
-        // Get raw input values as strings
         const rawPriceUsd = itemPriceUsdInput.value.trim();
         const rawPriceVes = itemPriceVesInput.value.trim();
 
-        // Parse to float, will be NaN if input is empty or invalid
         const priceUsd = parseFloat(rawPriceUsd);
         const priceVes = parseFloat(rawPriceVes);
 
@@ -492,7 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Check if AT LEAST ONE of the price fields has a non-empty value and is a valid number
         const hasValidUsdInput = rawPriceUsd !== '' && !isNaN(priceUsd) && priceUsd >= 0;
         const hasValidVesInput = rawPriceVes !== '' && !isNaN(priceVes) && priceVes >= 0;
 
@@ -500,14 +668,13 @@ document.addEventListener('DOMContentLoaded', () => {
             showAlert('Por favor, ingrese un precio válido en USD o VES.');
             return;
         }
-
-        // No need for the "both entered" alert here, as the addItem function will prioritize USD if both are present.
-        // The auto-population makes it common for both to have values.
+        // Removed the strict check for "both entered" here, as auto-population makes it common.
+        // The addItem function will prioritize USD if both are valid.
 
         addItem(name, quantity, hasValidUsdInput ? priceUsd : null, hasValidVesInput ? priceVes : null);
     });
     
-    // Listeners para inputs de precio para conversión automática (opcional, para UX inmediata)
+    // Listeners for price inputs for automatic conversion (for immediate UX)
     itemPriceUsdInput.addEventListener('input', () => {
         const usdValue = parseFloat(itemPriceUsdInput.value);
         if (!isNaN(usdValue) && bcvExchangeRate > 0) {
@@ -527,10 +694,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Listener para crear un total parcial
+    // Listener for creating a partial total
     createPartialTotalBtn.addEventListener('click', createPartialTotal);
 
-    // Delegación de eventos para botones de ítem (eliminar, editar, guardar, cancelar)
+    // Event delegation for item action buttons within the CURRENT items list
     itemsList.addEventListener('click', (event) => {
         const target = event.target;
         const itemId = parseInt(target.dataset.id);
@@ -539,30 +706,62 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNaN(itemId) || !itemRowElement) return;
 
         if (target.classList.contains('delete-item-btn')) {
-            deleteItem(itemId);
+            deleteItem(itemId); // No partialTotalId, so it operates on currentItems
         } else if (target.classList.contains('edit-item-btn')) {
-            enableItemEdit(itemId, itemRowElement);
+            enableItemEdit(itemId, itemRowElement); // No partialTotalId
         } else if (target.classList.contains('save-item-btn')) {
-            saveItemEdit(itemId, itemRowElement);
+            saveItemEdit(itemId, itemRowElement); // No partialTotalId
         } else if (target.classList.contains('cancel-item-btn')) {
             cancelItemEdit(itemRowElement);
         }
     });
 
-    // Delegación de eventos para botones de eliminar total parcial
+    // Event delegation for ALL partial total related buttons (delete partial, edit item inside partial, etc.)
     partialTotalsList.addEventListener('click', (event) => {
-        if (event.target.classList.contains('delete-partial-btn')) {
-            const idToDelete = parseInt(event.target.dataset.id);
-            if (!isNaN(idToDelete)) {
-                deletePartialTotal(idToDelete);
+        const target = event.target;
+        const partialTotalId = target.dataset.id ? parseInt(target.dataset.id) : null;
+        const itemRowElement = target.closest('.item-row'); // Check if click is on an item row inside a partial total
+
+        if (target.classList.contains('delete-partial-btn')) {
+            if (!isNaN(partialTotalId)) {
+                deletePartialTotal(partialTotalId);
+            }
+        } else if (target.classList.contains('edit-partial-name-btn')) {
+             if (!isNaN(partialTotalId)) {
+                const partialTotalElement = target.closest('.partial-total-item');
+                enablePartialTotalNameEdit(partialTotalId, partialTotalElement);
+            }
+        } else if (target.classList.contains('save-partial-name-btn')) {
+            if (!isNaN(partialTotalId)) {
+                const partialTotalElement = target.closest('.partial-total-item');
+                savePartialTotalName(partialTotalId, partialTotalElement);
+            }
+        } else if (target.classList.contains('cancel-partial-name-btn')) {
+            const partialTotalElement = target.closest('.partial-total-item');
+            cancelPartialTotalNameEdit(partialTotalElement);
+        }
+        // Handle item actions within partial totals
+        else if (itemRowElement && itemRowElement.dataset.partialTotalId) {
+            const itemId = parseInt(itemRowElement.dataset.id);
+            const parentPartialTotalId = parseInt(itemRowElement.dataset.partialTotalId);
+
+            if (target.classList.contains('delete-item-btn')) {
+                deleteItem(itemId, parentPartialTotalId);
+            } else if (target.classList.contains('edit-item-btn')) {
+                enableItemEdit(itemId, itemRowElement, parentPartialTotalId);
+            } else if (target.classList.contains('save-item-btn')) {
+                saveItemEdit(itemId, itemRowElement, parentPartialTotalId);
+            } else if (target.classList.contains('cancel-item-btn')) {
+                cancelItemEdit(itemRowElement); // Cancel logic is generic, no need for partialTotalId here
             }
         }
     });
 
-    // Listener para recalcular totales cuando cambia el porcentaje
+
+    // Listener to recalculate totals when percentage changes
     percentageAddInput.addEventListener('input', calculateFinalTotals);
 
-    // --- Inicialización ---
+    // --- Initialization ---
     fetchBcvRate();
     updateTotals(); // Initial update to display zeros and messages
 });
